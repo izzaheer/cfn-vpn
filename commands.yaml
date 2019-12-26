@@ -1,0 +1,243 @@
+#AWS::EC2::CustomerGateway	cgw
+#AWS::EC2::VPNGateway		vgw
+#AWS::EC2::VPNConnection		vpn
+#AWS::EC2::VPCGatewayAttachment attache the gatway tp the VPC
+#REGION="us-east-1"
+#VPN_ID=`aws cloudformation describe-stacks --stack-name asdasdasd --region $REGION --output text |grep vpn-|awk -F ' ' '{print $4}'`
+#aws ec2 describe-vpn-connections --vpn-connection-ids $VPN_ID --output text --region $REGION |head -n 97 > vpn-data.xml
+
+Parameters: 
+  CSRIP: 
+    Type: String
+Resources:
+  VPNGateway:
+    Type: AWS::EC2::VPNGateway
+    Properties: 
+      Type: ipsec.1
+  CustomerGateway:
+    Type: AWS::EC2::CustomerGateway
+    Properties: 
+      BgpAsn: 6500
+      IpAddress: !Ref CSRIP
+      Type: ipsec.1
+  VPNConnection:
+    Type: AWS::EC2::VPNConnection
+    Properties: 
+      CustomerGatewayId: !Ref CustomerGateway
+      StaticRoutesOnly: true
+      Type: ipsec.1
+      VpnGatewayId: !Ref VPNGateway
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      VpcId: !Ref theVPC
+      VpnGatewayId: !Ref VPNGateway
+##############################
+  theVPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.20.0.0/16"
+      Tags:
+        - Key: Name
+          Value: CFN-VPC
+
+  publicsubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.1.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public-A          
+
+  publicroutetable1:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+  
+  publicroute1:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref publicroutetable1
+      GatewayId: !Ref igw1
+
+  routetableassociation1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref publicroutetable1
+      SubnetId: !Ref publicsubnet1
+############################
+  publicsubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.2.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public-B
+
+  publicroutetable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+  
+  publicroute2:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref publicroutetable2
+      GatewayId: !Ref igw1
+
+  routetableassociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref publicroutetable2
+      SubnetId: !Ref publicsubnet2
+############################
+  publicsubnet3:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.3.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Public-C
+
+  publicroutetable3:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+  
+  publicroute3:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref publicroutetable3
+      GatewayId: !Ref igw1
+
+  routetableassociation3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref publicroutetable3
+      SubnetId: !Ref publicsubnet3
+############################
+  privatesubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.11.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      Tags:
+        - Key: Name
+          Value: Private-A
+
+  privateroutetable1:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+
+  privateroute1:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref privateroutetable1
+      NatGatewayId: !Ref ngw 
+
+  privateroutetableassociation1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref privateroutetable1
+      SubnetId: !Ref privatesubnet1
+############################
+  privatesubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.12.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      Tags:
+        - Key: Name
+          Value: Private-B
+
+  privateroutetable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+
+  privateroute2:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref privateroutetable2
+      NatGatewayId: !Ref ngw 
+
+  privateroutetableassociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref privateroutetable2
+      SubnetId: !Ref privatesubnet2
+############################
+  privatesubnet3:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref theVPC
+      CidrBlock: "10.20.13.0/24"
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      Tags:
+        - Key: Name
+          Value: Private-C
+
+  privateroutetable3:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref theVPC
+
+  privateroute3:
+    Type : "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      RouteTableId: !Ref privateroutetable3
+      NatGatewayId: !Ref ngw 
+
+  privateroutetableassociation3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties: 
+      RouteTableId: !Ref privateroutetable3
+      SubnetId: !Ref privatesubnet3
+############################
+  igw1:
+    Type: "AWS::EC2::InternetGateway"
+
+  gwattachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties: 
+      InternetGatewayId: !Ref igw1
+      VpcId: !Ref theVPC
+
+  ngw:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+          - eip
+          - AllocationId
+      SubnetId: !Ref publicsubnet1
+
+  eip:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: "theVPC"
+
+
+##############################      
+Outputs:
+  VPNID:
+    Description: VPN-ID
+    Value: !Ref VPNConnection
